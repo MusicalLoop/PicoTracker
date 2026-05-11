@@ -249,7 +249,7 @@ def main():
         menu.config_changed = True
 
     def _load_track_items():
-        """Build dynamic menu of track CSV files for deletion."""
+        """Build dynamic menu of track CSV files."""
         import os
         items = []
         try:
@@ -263,18 +263,50 @@ def main():
                 size_bytes = os.stat(f)[6]
             except Exception:
                 size_bytes = 0
-            # Skip currently recording file
             if rec.is_recording and rec._filename == f:
                 continue
-            label  = f[6:-4]           # strip "track_" and ".csv"
-            detail = "{:.1f}KB  {}pts".format(
-                size_bytes / 1024,
-                max(0, (size_bytes - 55) // 55))   # rough point estimate
+            label = f[6:-4]   # strip "track_" and ".csv"
+
+            # Check if GPX already exists
+            gpx_name = f[:-4] + ".gpx"
+            gpx_exists = False
+            try:
+                os.stat(gpx_name)
+                gpx_exists = True
+            except OSError:
+                pass
+
+            convert_label = "GPX exists" if gpx_exists else "Convert GPX"
+            size_str = "{:.1f}KB".format(size_bytes / 1024)
+
+            def _make_convert(fn=f):
+                def _do():
+                    from gpx import convert as gpx_convert
+                    ok, result = gpx_convert(fn)
+                    if ok:
+                        debug.info("main: GPX -> {}".format(result))
+                    else:
+                        debug.error("main: GPX failed: {}".format(result))
+                return _do
+
+            track_children = [
+                {
+                    "label":  convert_label,
+                    "type":   ITEM_ACTION,
+                    "action": _make_convert(f),
+                },
+                {
+                    "label":  "Delete  " + size_str,
+                    "type":   ITEM_CONFIRM,
+                    "action": (lambda fn=f: os.remove(fn)),
+                    "detail": size_str,
+                },
+            ]
+
             items.append({
-                "label":  label[:16],
-                "type":   ITEM_CONFIRM,
-                "action": (lambda fn=f: os.remove(fn)),
-                "detail": detail,
+                "label":    label[:16],
+                "type":     ITEM_SUBMENU,
+                "children": track_children,
             })
 
         if not items:
@@ -341,10 +373,16 @@ def main():
         # --- Process input events ---
         event = inp.get_event()
         if event is not None:
-            disp.touch()   # Reset screen timeout on any interaction
+            was_off = not disp.is_on
+            disp.touch()   # Always wake / reset timeout
+
+            # If display was off, consume event unless it's B_LONG
+            # B_LONG acts immediately from sleep (menu access is always available)
+            if was_off and event != B_LONG:
+                pass   # Wake only — discard event
 
             # Global: AB_SHORT toggles recording
-            if event == AB_SHORT:
+            elif event == AB_SHORT:
                 rec.toggle()
                 rec.set_profile(act.current)
                 debug.info("main: recording toggled -> {}".format(rec.is_recording))

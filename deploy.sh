@@ -13,7 +13,7 @@ APP="app"
 TOOLS="tools"
 
 APP_FILES="debug.py config.py gnss_state.py gnss.py input.py display.py \
-           metrics.py activity.py recorder.py menu.py main.py"
+           metrics.py activity.py recorder.py menu.py gpx.py main.py"
 
 echo "=== PicoTracker deploy ==="
 echo ""

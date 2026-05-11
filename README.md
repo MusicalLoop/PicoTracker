@@ -39,9 +39,10 @@ The three boards stack directly — Pico 2W at the bottom, GPS HAT in the middle
 - Per-constellation signal metrics (GPS, BeiDou, GLONASS)
 - Four activity profiles — Walk, Run, Ride, Car — each with configurable recording interval, distance filter, speed threshold and auto-pause
 - CSV track recording to internal flash with distance and speed filtering
+- GPX export — convert any track to GPX 1.1 directly on the device
 - Waypoint marking — single button press saves current position to `waypoints.csv`
 - Flash storage monitoring with used/free display
-- Track file management — list and delete tracks from the device menu
+- Track file management — list, convert to GPX, and delete tracks from the device menu
 - Configurable display rotation, brightness and screen timeout
 - Splash screen on boot with scroll animation
 - Settings persist across reboots via `config.json`
@@ -152,6 +153,9 @@ System
   Save config
   Factory reset
   Manage tracks
+    <track name>
+      Convert GPX
+      Delete
   Reboot
 ```
 
@@ -178,6 +182,12 @@ utc_time, date, lat, lon, alt, speed, heading, hdop, sats_used
 - `hdop` — horizontal dilution of precision
 - `sats_used` — satellites contributing to fix
 
+### GPX files — `track_<ticks>.gpx`
+
+Generated on demand via **Menu → System → Manage tracks → [track name] → Convert GPX**. GPX 1.1 format, compatible with Google Earth, Garmin Connect, Strava, OS Maps and most mapping applications.
+
+Each track point includes latitude, longitude, elevation, ISO 8601 timestamp, speed and HDOP. Once converted the menu item shows `GPX exists` to prevent duplicate conversion.
+
 ### Waypoints file — `waypoints.csv`
 
 Appended to each time A long is pressed with a valid fix. Columns:
@@ -185,6 +195,8 @@ Appended to each time A long is pressed with a valid fix. Columns:
 ```
 utc_time, date, lat, lon, alt, hdop
 ```
+
+Persists across recording sessions and is not included in the Manage Tracks menu.
 
 ---
 
@@ -224,6 +236,7 @@ PicoTracker/
     metrics.py       MetricsManager — timed snapshots of GNSS state
     activity.py      ActivityManager and ActivityProfile
     recorder.py      CSV recorder with distance/speed filtering
+    gpx.py           CSV to GPX 1.1 converter
     menu.py          MenuController — four-mode UI state machine
   tools/
     cleanup_tracks.py  Remove empty track files from flash
@@ -268,7 +281,7 @@ print(sorted(os.listdir('/')))
 Expected files:
 ```
 activity.py, config.json, config.py, debug.py, display.py,
-gnss.py, gnss_state.py, input.py, main.py, menu.py,
+gnss.py, gnss_state.py, gpx.py, input.py, main.py, menu.py,
 metrics.py, recorder.py
 ```
 
@@ -305,6 +318,5 @@ Constellation identification in the fix screen uses PRN number ranges since the 
 
 - Altitude accuracy is poor indoors or near buildings (typical for consumer GNSS)
 - Imperial units setting is stored but not yet applied to the display
-- Track file listing shows estimated point count based on file size
-- No GPX export — tracks are CSV only
+- GPX conversion requires enough free flash for both the CSV and GPX simultaneously (~3.6× the CSV size)
 - Waypoints file is not included in the Manage Tracks menu (intentional — it persists across sessions)

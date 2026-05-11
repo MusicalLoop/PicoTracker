@@ -14,7 +14,7 @@ from metrics    import MetricsManager
 from activity   import ActivityManager
 from recorder   import Recorder
 from display    import DisplayController
-from menu       import MenuController, MODE_SCREEN, ITEM_CONFIRM, ITEM_ACTION
+from menu       import MenuController, MODE_SCREEN, ITEM_CONFIRM, ITEM_ACTION, ITEM_SUBMENU
 
 # ---------------------------------------------------------------------------
 # Screen definitions (screens shown in SCREEN mode, cycled by A_SHORT)
